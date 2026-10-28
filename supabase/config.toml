@@ -1,0 +1,3 @@
+# Only the part this checker needs. In the dashboard this is the "Verify JWT" switch (turn it OFF).
+[functions.class-connection-ingest]
+verify_jwt = false

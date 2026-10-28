@@ -1,0 +1,52 @@
+name: Class Connection checker
+
+on:
+  schedule:
+    - cron: "13 2 * * 1-5"
+    - cron: "47 7 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      max_minutes:
+        description: "How many minutes to run (test run)"
+        required: false
+        default: "20"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: class-connection-checker
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: node checker.mjs --selftest
+
+      - name: Check live classes
+        run: node checker.mjs
+        env:
+          CHECKER_FUNCTION_URL: ${{ secrets.CHECKER_FUNCTION_URL }}
+          CLASS_MONITOR_TOKEN: ${{ secrets.CLASS_MONITOR_TOKEN }}
+          NOON_SESSION: ${{ secrets.NOON_SESSION }}
+          CHECK_SECONDS: "60"
+          RUN_UNTIL_PKT: ${{ github.event_name == 'schedule' && (github.event.schedule == '13 2 * * 1-5' && '12:50' || '18:20') || '' }}
+          MAX_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.max_minutes || '335' }}
