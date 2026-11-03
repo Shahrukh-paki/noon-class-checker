@@ -98,7 +98,7 @@ To run the logic tests on a computer: `npm run selftest`.
 
 ## Automatic schedule and sign-in renewal (3 Nov 2026)
 - **Supabase starts the runs on time** (`supabase/dispatch_schedule.sql`, pg_cron + pg_net). GitHub's own timer started runs 6-9 hours late, after school.
-  - Check runs: Mon-Fri 07:35-13:15 and 13:15-18:20 PKT.
+  - Check runs: Mon-Sat 07:35-13:15 and 13:15-18:20 PKT.
   - Keep-alive runs: every 2 hours, every day (weekends too). They only open Noon once so it renews the TA sign-in, save it to Supabase, and stop. This is what stops the sign-in from expiring over a weekend.
 - GitHub's timer remains only as a backup keep-alive (20:20 and 02:20 PKT); a late keep-alive does no harm.
 - A check run that completes **0 checks** now ends **red** instead of green.

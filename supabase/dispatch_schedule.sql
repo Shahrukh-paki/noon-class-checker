@@ -38,10 +38,10 @@ revoke execute on function public.dispatch_class_checker(text, text) from public
 select cron.unschedule(jobname) from cron.job
  where jobname in ('class-checker-am', 'class-checker-pm', 'class-checker-keepalive');
 
--- Mon-Fri 07:35 PKT: check until 13:15 PKT (covers Summer and Winter Shift 1-2).
-select cron.schedule('class-checker-am', '35 2 * * 1-5', $$select public.dispatch_class_checker('check', '13:15')$$);
--- Mon-Fri 13:15 PKT: check until 18:20 PKT (covers Shift 2-3).
-select cron.schedule('class-checker-pm', '15 8 * * 1-5', $$select public.dispatch_class_checker('check', '18:20')$$);
+-- Mon-Sat 07:35 PKT: check until 13:15 PKT (covers Summer and Winter Shift 1-2).
+select cron.schedule('class-checker-am', '35 2 * * 1-6', $$select public.dispatch_class_checker('check', '13:15')$$);
+-- Mon-Sat 13:15 PKT: check until 18:20 PKT (covers Shift 2-3).
+select cron.schedule('class-checker-pm', '15 8 * * 1-6', $$select public.dispatch_class_checker('check', '18:20')$$);
 -- Every 2 hours, every day (weekends too): renew the Noon sign-in so it never expires.
 select cron.schedule('class-checker-keepalive', '10 */2 * * *', $$select public.dispatch_class_checker('keepalive')$$);
 

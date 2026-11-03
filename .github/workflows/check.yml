@@ -1,7 +1,7 @@
 name: Class Connection checker
 
 # Started on time by Supabase (pg_cron -> GitHub API, see supabase/dispatch_schedule.sql):
-#   check runs Mon-Fri 07:35-13:15 and 13:15-18:20 PKT, keep-alive every 2 hours every day.
+#   check runs Mon-Sat 07:35-13:15 and 13:15-18:20 PKT, keep-alive every 2 hours every day.
 # GitHub's own timer below is only a backup keep-alive: GitHub often starts scheduled runs
 # hours late, which is harmless for a keep-alive but useless for checking lectures.
 on:
