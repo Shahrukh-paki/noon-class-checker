@@ -351,7 +351,25 @@ class Checker {
         }
         await sleep(1000);
       }
-      throw new Error('participants list not found');
+      // Read-only snapshot of what the classroom page shows, so a layout change on Noon's side can
+      // be seen in the log. Nothing is clicked here.
+      const diag = await pg.evaluate(() => {
+        const vis = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+        const labels = [...document.querySelectorAll('button, [role="button"], [data-testid], [aria-label]')]
+          .filter(vis)
+          .map(el => [el.getAttribute('data-testid'), el.getAttribute('aria-label'), (el.innerText || '').trim().slice(0, 30)].filter(Boolean).join('/'))
+          .filter(Boolean);
+        return {
+          url: location.pathname,
+          rows310: document.querySelectorAll('div[style*="width: 310px"]').length,
+          videos: document.querySelectorAll('video, [id^="agora-video-player"]').length,
+          // Labels only (no page text): the log of this public repo is public.
+          labels: [...new Set(labels)].slice(0, 40),
+          headings: [...document.querySelectorAll('h1, h2, h3, [role="tab"]')].filter(vis).map(h => (h.innerText || '').trim().slice(0, 30)).slice(0, 10),
+        };
+      }).catch(e => ({ error: e.message }));
+      log(`    page snapshot: ${JSON.stringify(diag)}`);
+      throw new Error(`participants list not found${joined ? ' (Join was clicked)' : ''}`);
     } finally {
       await pg.close().catch(() => {});
     }
