@@ -364,7 +364,14 @@ class Checker {
           rows310: document.querySelectorAll('div[style*="width: 310px"]').length,
           videos: document.querySelectorAll('video, [id^="agora-video-player"]').length,
           // Labels only (no page text): the log of this public repo is public.
-          labels: [...new Set(labels)].slice(0, 40),
+          labels: [...new Set(labels)].filter(l => !/slide-navigation|non-selected-slide|avatar-|segment-block|action-(undo|redo|pen|eraser|shape)/.test(l)).slice(0, 40),
+          panelish: [...new Set(labels)].filter(l => /particip|student|people|user|member|list|room|attend|grid|gallery|layout|view|tab|sidebar|drawer/i.test(l)).slice(0, 30),
+          // Campus-room style names only (e.g. "Ali Town-R3"); people's names never match this.
+          roomTitles: [...new Set([...document.querySelectorAll('div, span, p')]
+            .filter(el => el.children.length === 0)
+            .map(el => (el.innerText || '').trim())
+            .filter(t => /^[A-Za-z .']{3,30}\s*-\s*R(oom)?\s*\d{1,2}(\s*\(\d+\))?$/.test(t)))].slice(0, 40),
+          videoBoxes: [...document.querySelectorAll('video, [id^="agora-video-player"]')].slice(0, 6).map(v => { const p = v.closest('div[style]') || v.parentElement; const r = p.getBoundingClientRect(); return `${Math.round(r.width)}x${Math.round(r.height)}@${Math.round(r.left)},${Math.round(r.top)}`; }),
           headings: [...document.querySelectorAll('h1, h2, h3, [role="tab"]')].filter(vis).map(h => (h.innerText || '').trim().slice(0, 30)).slice(0, 10),
         };
       }).catch(e => ({ error: e.message }));
