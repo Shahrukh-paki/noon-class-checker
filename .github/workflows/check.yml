@@ -60,6 +60,7 @@ jobs:
           CLASS_MONITOR_TOKEN: ${{ secrets.CLASS_MONITOR_TOKEN }}
           NOON_SESSION: ${{ secrets.NOON_SESSION }}
           CHECK_SECONDS: "60"
+          LOG_ROOMS: "1"
           MODE: ${{ github.event_name == 'schedule' && 'keepalive' || inputs.mode }}
           RUN_UNTIL_PKT: ${{ github.event_name == 'workflow_dispatch' && inputs.run_until_pkt || '' }}
           MAX_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.max_minutes || '20' }}

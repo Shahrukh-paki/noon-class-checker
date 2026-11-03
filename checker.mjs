@@ -22,15 +22,32 @@ const FORBIDDEN_ATTR = /exit|leave|setting|bug|report|mic|camera|mute|video|audi
 const JOIN_TEXT = /^\s*join(\s+(live|now|class|the class))?\s*$/i;
 const SIGN_IN_PATH = /welcome|login|log-in|sign-?in|signup|auth/i;
 
+// Finds the participants list rows. Noon renders it as a virtual list: absolutely positioned rows
+// inside one container. It used to be found by its exact 310px width, which broke when Noon
+// changed the panel width, so it is now found by content: a room header ("<Campus>-R<n> (<count>)")
+// and the absolutely positioned row that holds it; the rows are that row's absolute siblings.
+const JS_FIND_ROWS = `(() => {
+  const HDR = /^(.+?)\\s*-\\s*R(oom)?\\s*\\d{1,2}\\s*\\((\\d+)\\)\\s*$/i;
+  const leaf = [...document.querySelectorAll('div, span, p')]
+    .find(e => e.children.length === 0 && HDR.test((e.innerText || '').trim()));
+  let row = leaf || null;
+  const isRow = el => el && el.style && el.style.position === 'absolute' && el.parentElement
+    && [...el.parentElement.children].filter(c => c.style && c.style.position === 'absolute').length >= 2;
+  while (row && row !== document.body && !isRow(row)) row = row.parentElement;
+  if (!row || row === document.body) return [];
+  return [...row.parentElement.children].filter(c => c.style && c.style.position === 'absolute');
+})()`;
+
 const JS_READ_PANEL = `(() => {
   const HDR = /^(.+?)\\s*\\((\\d+)\\)\\s*$/;
-  const rows = [...document.querySelectorAll('div[style*="position: absolute"][style*="width: 310px"]')]
+  const rows = ${JS_FIND_ROWS}
     .map(r => ({ el: r, top: parseFloat(r.style.top || '0') }))
     .sort((a, b) => a.top - b.top);
   const rooms = [];
   let cur = null;
   for (const { el, top } of rows) {
-    const texts = [...el.querySelectorAll('div[dir="auto"]')].map(d => (d.innerText || '').trim()).filter(Boolean);
+    let texts = [...el.querySelectorAll('div[dir="auto"]')].map(d => (d.innerText || '').trim()).filter(Boolean);
+    if (!texts.length) texts = [...el.querySelectorAll('div, span, p')].filter(d => d.children.length === 0).map(d => (d.innerText || '').trim()).filter(Boolean);
     const first = texts[0] || '';
     if (HDR.test(first) && !/^view\\s+\\d+/i.test(first)) {
       const m = first.match(HDR);
@@ -56,8 +73,10 @@ const JS_READ_PANEL = `(() => {
 })()`;
 
 const JS_SCROLL_PANEL = toTop => {
-  const r = document.querySelector('div[style*="position: absolute"][style*="width: 310px"]');
-  if (!r) return false;
+  const HDR = /^(.+?)\s*-\s*R(oom)?\s*\d{1,2}\s*\((\d+)\)\s*$/i;
+  let r = [...document.querySelectorAll('div, span, p')].find(e => e.children.length === 0 && HDR.test((e.innerText || '').trim())) || null;
+  while (r && r !== document.body && !(r.style && r.style.position === 'absolute')) r = r.parentElement;
+  if (!r || r === document.body) return false;
   let s = r.parentElement;
   while (s && s !== document.body) {
     const o = getComputedStyle(s).overflowY;
