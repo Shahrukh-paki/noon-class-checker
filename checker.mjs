@@ -403,7 +403,14 @@ class Checker {
   }
 
   async run() {
-    log(`running until ${pkt(this.deadline)} PKT, a check every ${this.checkMs / 1000}s`);
+    const keepalive = String(this.env.MODE || '').trim() === 'keepalive';
+    if (keepalive) log('keep-alive run: open Noon once so it renews the session, save it, stop');
+    else log(`running until ${pkt(this.deadline)} PKT, a check every ${this.checkMs / 1000}s`);
+    if (!keepalive && Date.now() >= this.deadline) {
+      // Started after its stop time (a late trigger): nothing will be checked, so say so loudly
+      // instead of ending green with zero checks.
+      log(`started after the stop time (${pkt(this.deadline)} PKT) - 0 checks possible`);
+    }
     await this.start();
     const first = await this.signIn();
     if (!first.ok) {
@@ -412,11 +419,20 @@ class Checker {
       return 1;
     }
     await this.markExpired(false);
+    if (keepalive) {
+      // Give the portal a moment to finish any token refresh it started, then store the result.
+      await sleep(8000);
+      await this.saveSession(true);
+      log('keep-alive done');
+      return 0;
+    }
+    let checks = 0;
     while (Date.now() < this.deadline) {
       const t0 = Date.now();
       let res = {};
       try {
         res = await this.cycle();
+        if (!res.signedOut) checks += 1;
       } catch (e) {
         if (e.fatal) { log(e.message); return 1; }
         log(`check failed: ${e.message}`);
@@ -431,7 +447,11 @@ class Checker {
       if (wait > 0 && Date.now() + wait < this.deadline) await sleep(wait);
       else if (wait > 0) break;
     }
-    log('deadline reached');
+    log(`deadline reached after ${checks} check${checks === 1 ? '' : 's'}`);
+    if (checks === 0) {
+      log('FAILED: 0 checks ran in this run (it started too late or every check errored)');
+      return 1;
+    }
     return 0;
   }
 

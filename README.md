@@ -95,3 +95,12 @@ Notes:
 | `LOG_ROOMS` | `"1"` prints every room's state (visible to the public) |
 
 To run the logic tests on a computer: `npm run selftest`.
+
+## Automatic schedule and sign-in renewal (3 Nov 2026)
+- **Supabase starts the runs on time** (`supabase/dispatch_schedule.sql`, pg_cron + pg_net). GitHub's own timer started runs 6-9 hours late, after school.
+  - Check runs: Mon-Fri 07:35-13:15 and 13:15-18:20 PKT.
+  - Keep-alive runs: every 2 hours, every day (weekends too). They only open Noon once so it renews the TA sign-in, save it to Supabase, and stop. This is what stops the sign-in from expiring over a weekend.
+- GitHub's timer remains only as a backup keep-alive (20:20 and 02:20 PKT); a late keep-alive does no harm.
+- A check run that completes **0 checks** now ends **red** instead of green.
+- One-time setup: a fine-grained GitHub token (this repo only, **Actions: Read and write**) stored in Supabase Vault as `github_checker_dispatch_token`, then run `supabase/dispatch_schedule.sql` in the SQL editor. The token expires on the date chosen when it was made; renew it before then (see the file's header).
+- Manual test: **Actions -> Class Connection checker -> Run workflow**, mode `keepalive` (about 2 minutes) or `check` with a stop time.

@@ -1,13 +1,25 @@
 name: Class Connection checker
 
+# Started on time by Supabase (pg_cron -> GitHub API, see supabase/dispatch_schedule.sql):
+#   check runs Mon-Fri 07:35-13:15 and 13:15-18:20 PKT, keep-alive every 2 hours every day.
+# GitHub's own timer below is only a backup keep-alive: GitHub often starts scheduled runs
+# hours late, which is harmless for a keep-alive but useless for checking lectures.
 on:
   schedule:
-    - cron: "13 2 * * 1-5"
-    - cron: "47 7 * * 1-5"
+    - cron: "20 15 * * *"
+    - cron: "20 21 * * *"
   workflow_dispatch:
     inputs:
+      mode:
+        description: "check = read live classes, keepalive = only renew the Noon sign-in"
+        required: false
+        default: "check"
+      run_until_pkt:
+        description: "Stop time in Pakistan time, e.g. 13:15 (check runs only)"
+        required: false
+        default: ""
       max_minutes:
-        description: "How many minutes to run (test run)"
+        description: "Longest run in minutes (check runs only)"
         required: false
         default: "20"
 
@@ -21,7 +33,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 345
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
 
@@ -48,5 +60,6 @@ jobs:
           CLASS_MONITOR_TOKEN: ${{ secrets.CLASS_MONITOR_TOKEN }}
           NOON_SESSION: ${{ secrets.NOON_SESSION }}
           CHECK_SECONDS: "60"
-          RUN_UNTIL_PKT: ${{ github.event_name == 'schedule' && (github.event.schedule == '13 2 * * 1-5' && '12:50' || '18:20') || '' }}
-          MAX_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.max_minutes || '335' }}
+          MODE: ${{ github.event_name == 'schedule' && 'keepalive' || inputs.mode }}
+          RUN_UNTIL_PKT: ${{ github.event_name == 'workflow_dispatch' && inputs.run_until_pkt || '' }}
+          MAX_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.max_minutes || '20' }}
